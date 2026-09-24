@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulator Matematika Erupsi Vulkanik Realistis</title>
+  
+  <!-- KaTeX untuk render rumus -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true},{left: '$', right: '$', display: false}]});"></script>
+
+  <style>
+    :root {
+      --bg: #07060a;
+      --card-bg: #120f1a;
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #ff4d24;
+      --accent-glow: #a855f7;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 25px 15px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, #fff, var(--accent), var(--accent-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .viewport-grid {
+      display: grid;
+      grid-template-columns: 850px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .viewport-grid { grid-template-columns: 1fr; }
+    }
+
+    .canvas-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+
+    .canvas-container {
+      width: 100%;
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      aspect-ratio: 16 / 9;
+    }
+
+    .canvas-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Panel Kontrol */
+    .controls-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .controls-card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: #ffb703;
+    }
+
+    .control-item {
+      margin-bottom: 14px;
+    }
+
+    .control-item label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+      color: #cbd5e1;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      accent-color: var(--accent);
+      background: #231d31;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    button {
+      flex: 1;
+      background: #1e182c;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Penjelasan Formula */
+    .theory-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 25px;
+      margin-top: 30px;
+    }
+
+    .theory-card h3 {
+      color: #ffb703;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+    }
+
+    .math-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .math-item {
+      background: #0b0912;
+      border-left: 3px solid var(--accent);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .math-item strong {
+      color: #38bdf8;
+      display: block;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Generator Erupsi Vulkanik Matematis</h1>
+      <p>Sintesis prosedural murni menggunakan <em>Domain Warping FBM</em>, <em>Rigid Fracturing</em>, dan medan petir fraktal.</p>
+    </header>
+
+    <div class="viewport-grid">
+      <!-- Kanvas Utama WebGL -->
+      <div class="canvas-card">
+        <div class="canvas-container">
+          <canvas id="glcanvas" width="1280" height="720"></canvas>
+        </div>
+        <div class="canvas-footer">
+          <span>Resolusi Render: <strong>1280 × 720</strong> (Dihitung per-piksel di GPU)</span>
+          <span id="fps">FPS: 60</span>
+        </div>
+      </div>
+
+      <!-- Kontrol Parameter Fisika -->
+      <div class="controls-card">
+        <h2>Parameter Matematika</h2>
+
+        <div class="control-item">
+          <label>Turbulensi Abu Vulkanik <span id="v_turb">1.35</span></label>
+          <input type="range" id="turb" min="0.5" max="2.5" step="0.05" value="1.35">
+        </div>
+
+        <div class="control-item">
+          <label>Intensitas Sambaran Petir <span id="v_light">1.20</span></label>
+          <input type="range" id="light" min="0.0" max="3.0" step="0.1" value="1.20">
+        </div>
+
+        <div class="control-item">
+          <label>Pijaran Lava Kawah <span id="v_lava">1.40</span></label>
+          <input type="range" id="lava" min="0.2" max="3.0" step="0.1" value="1.40">
+        </div>
+
+        <div class="control-item">
+          <label>Kekasaran Tebing Batu Gunung <span id="v_rock">1.10</span></label>
+          <input type="range" id="rock" min="0.2" max="2.0" step="0.05" value="1.10">
+        </div>
+
+        <div class="control-item">
+          <label>Kerapatan Awan Payung (Plume) <span id="v_plume">1.25</span></label>
+          <input type="range" id="plume" min="0.5" max="2.2" step="0.05" value="1.25">
+        </div>
+
+        <div class="btn-row">
+          <button id="btn_animate" class="active" onclick="toggleAnimation()">Animasi Fluida: ON</button>
+          <button onclick="resetDefaults()">Reset Nilai</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bedah Formula Matematika Realistis -->
+    <div class="theory-card">
+      <h3>Formula yang Menggantikan Model Sederhana:</h3>
+      <div class="math-grid">
+        <div class="math-item">
+          <strong>1. Dinamika Abu (Domain Warping):</strong>
+          Menggantikan lingkaran polos dengan pusaran gas bertingkat:
+          $$q = \text{fbm}(p + t)$$
+          $$r = \text{fbm}(p + 4.0q)$$
+          $$\text{Abu} = \text{fbm}(p + 4.0r)$$
+        </div>
+
+        <div class="math-item">
+          <strong>2. Tebing Batu (Rigid Multifractal):</strong>
+          Menggantikan bukit mulus dengan punggungan lereng tajam:
+          $$H(x) = \sum_{k=1}^6 \frac{1}{2^k} \left|2\cdot \text{noise}(2^k x) - 1\right|$$
+        </div>
+
+        <div class="math-item">
+          <strong>3. Medan Kilat (Fractal Distance Field):</strong>
+          Jalur kilat bergerigi dengan hamburan cahaya hiperbolik:
+          $$d = \left|x - \text{Path}(y)\right|$$
+          $$\text{Pijar} = \frac{I_{\text{core}}}{d^2 + 0.0001} + \frac{I_{\text{halo}}}{d + 0.05}$$
+        </div>
+
+        <div class="math-item">
+          <strong>4. Pencahayaan & Hamburan Warna:</strong>
+          Pencampuran warna abu vulkanik menyerap cahaya merah lava di bawah dan memantulkan semburat ungu di atas.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLSL Vertex Shader -->
+  <script id="vs" type="x-shader/x-vertex">
+    attribute vec2 position;
+    void main() {
+      gl_Position = vec4(position, 0.0, 1.0);
+    }
+  </script>
+
+  <!-- GLSL Fragment Shader (Komputasi Matematika Realistis) -->
+  <script id="fs" type="x-shader/x-fragment">
+    precision highp float;
+
+    uniform vec2 u_res;
+    uniform float u_time;
+    uniform float u_turb;
+    uniform float u_light;
+    uniform float u_lava;
+    uniform float u_rock;
+    uniform float u_plume;
+
+    // Generator Hash / Pseudo-acak matematis
+    float hash(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+
+    // Noise Kontinu 2D
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f); // Hermite cubic smoothing
+
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    // Fractional Brownian Motion (fBm) 6 Oktaf
+    float fbm(vec2 p) {
+      float v = 0.0;
+      float a = 0.5;
+      mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+      for (int i = 0; i < 6; i++) {
+        v += a * noise(p);
+        p = rot * p * 2.05 + vec2(100.0);
+        a *= 0.5;
+      }
+      return v;
+    }
+
+    // Rigid Noise untuk Punggungan Gunung Berbatu
+    float rigidNoise(vec2 p) {
+      float v = 0.0;
+      float a = 0.5;
+      for (int i = 0; i < 5; i++) {
+        float n = abs(noise(p) * 2.0 - 1.0);
+        v += a * (1.0 - n);
+        p *= 2.1;
+        a *= 0.48;
+      }
+      return v;
+    }
+
+    void main() {
+      // Normalisasi koordinat aspek rasio (-aspect..aspect, -1..1)
+      vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y;
+
+      // -------------------------------------------------------------
+      // 1. LANGIT SENJA VULKANIK (Gradasi Atmosfer)
+      // -------------------------------------------------------------
+      vec3 skyTop = vec3(0.07, 0.10, 0.22);       // Biru malam
+      vec3 skyMid = vec3(0.42, 0.20, 0.35);       // Violet debu
+      vec3 skyBottom = vec3(0.85, 0.40, 0.18);    // Jingga senja membara
+      
+      float skyGrad = smoothstep(-0.3, 0.6, uv.y);
+      vec3 col = mix(skyBottom, mix(skyMid, skyTop, skyGrad), smoothstep(-0.1, 0.7, uv.y));
+
+      // -------------------------------------------------------------
+      // 2. GUNUNG BERAPI (Bentuk Kerucut + Punggungan Cadas)
+      // -------------------------------------------------------------
+      vec2 craterPos = vec2(0.0, -0.16);
+      float distCone = abs(uv.x - craterPos.x);
+      
+      // Profil lereng gunung (Stratovolcano)
+      float mountainHeight = -0.16 - 0.48 * pow(distCone, 1.15);
+      
+      // Tambahkan fraktal batu terjal
+      float rockDetail = (rigidNoise(vec2(uv.x * 6.0, uv.y * 4.0)) - 0.5) * 0.12 * u_rock;
+      mountainHeight += rockDetail;
+
+      // Kawah cekung di puncak
+      mountainHeight -= 0.03 * exp(-distCone * distCone * 150.0);
+
+      bool isMountain = uv.y < mountainHeight;
+
+      // -------------------------------------------------------------
+      // 3. AWAN ERUPSI ABU (Domain Warping Multi-Layer)
+      // -------------------------------------------------------------
+      vec2 pSmoke = (uv - craterPos) * vec2(1.8, 1.0);
+      
+      // Bentuk payung awan (Plume expansion)
+      float plumeWidth = 0.06 + 0.45 * smoothstep(-0.1, 0.55, uv.y);
+      float plumeMask = smoothstep(plumeWidth * u_plume, 0.0, length(vec2(pSmoke.x, (pSmoke.y - 0.3) * 0.7)));
+
+      // Animasi pergerakan gas naik
+      vec2 flow = vec2(0.0, -u_time * 0.12);
+
+      // Domain Warping 3 Tingkat (Pusaran Fluida Asap)
+      vec2 q = vec2(fbm(pSmoke * 2.5 * u_turb + flow), fbm(pSmoke * 2.5 * u_turb + vec2(5.2, 1.3)));
+      vec2 r = vec2(fbm(pSmoke * 3.0 + 4.0 * q + flow * 0.5), fbm(pSmoke * 3.0 + 4.0 * q));
+      float smokeDensity = fbm(pSmoke * 2.5 + 4.0 * r);
+
+      smokeDensity = smoothstep(0.32, 0.85, smokeDensity * plumeMask * 1.6);
+
+      // Pewarnaan Awan Abu & Bayangan
+      vec3 ashDark = vec3(0.08, 0.06, 0.08);       // Bayangan abu pekat
+      vec3 ashMid = vec3(0.25, 0.18, 0.22);        // Debu vulkanik keunguan
+      vec3 ashLit = vec3(0.65, 0.42, 0.45);        // Puncak awan terkena matahari
+      
+      vec3 smokeCol = mix(ashDark, ashMid, smokeDensity);
+      smokeCol = mix(smokeCol, ashLit, pow(smokeDensity, 2.5) * smoothstep(0.0, 0.6, uv.y));
+
+      // Pijaran Lava Dalam Kawah (Sub-surface Scattering Merah Membara)
+      float craterGlowDist = length(uv - (craterPos + vec2(0.0, 0.02)));
+      float craterGlow = exp(-craterGlowDist * 6.5) * u_lava;
+      vec3 lavaColor = vec3(1.0, 0.25, 0.02) * 1.8;
+      smokeCol += lavaColor * craterGlow * (0.4 + 0.6 * smokeDensity);
+
+      // Gabungkan asap ke atas langit
+      if (!isMountain) {
+        col = mix(col, smokeCol, smoothstep(0.05, 0.35, smokeDensity));
+      }
+
+      // -------------------------------------------------------------
+      // 4. SAMBARAN PETIR VULKANIK (Fractal Lightning)
+      // -------------------------------------------------------------
+      if (u_light > 0.01) {
+        float ly = uv.y;
+        
+        // Jalur patah-patah petir (kombinasi frekuensi tinggi & rendah)
+        float boltX = 0.22 
+          + 0.07 * (noise(vec2(ly * 15.0, 2.1)) - 0.5) 
+          + 0.03 * (noise(vec2(ly * 45.0, 7.3)) - 0.5)
+          + 0.012 * (noise(vec2(ly * 120.0, 15.8)) - 0.5);
+
+        // Batasi rentang vertikal petir (hanya di dalam awan abu)
+        float boltYMask = smoothstep(-0.15, 0.1, ly) * smoothstep(0.55, 0.3, ly);
+
+        float distBolt = abs(uv.x - boltX);
+
+        // Inti putih sangat terang + bias pendaran ungu
+        float core = (0.0012 / (distBolt + 0.0008)) * boltYMask;
+        float halo = (0.025 / (distBolt + 0.035)) * boltYMask;
+
+        vec3 lightningColor = (vec3(1.0, 1.0, 1.0) * core + vec3(0.5, 0.4, 1.0) * halo) * u_light;
+        col += lightningColor;
+
+        // Cabang petir sekunder kecil
+        float branchX = boltX + (ly - 0.15) * 0.45 + 0.02 * (noise(vec2(ly * 60.0, 1.0)) - 0.5);
+        float distBranch = abs(uv.x - branchX);
+        float branchMask = smoothstep(0.08, 0.18, ly) * smoothstep(0.35, 0.2, ly);
+        float branchCore = (0.0006 / (distBranch + 0.0015)) * branchMask * u_light;
+        col += vec3(0.7, 0.6, 1.0) * branchCore;
+      }
+
+      // -------------------------------------------------------------
+      // 5. SHADING PERMUKAAN GUNUNG
+      // -------------------------------------------------------------
+      if (isMountain) {
+        // Normal lereng tebing berdasarkan turunan
+        float slope = (noise(vec2(uv.x * 20.0, uv.y * 10.0)) - 0.5);
+        
+        vec3 rockBase = vec3(0.09, 0.07, 0.08); // Basalt hitam
+        vec3 rockLit = vec3(0.28, 0.16, 0.14);  // Terkena pantulan lava & senja
+        
+        vec3 mCol = mix(rockBase, rockLit, clamp(slope * 1.5 + 0.3, 0.0, 1.0));
+        
+        // Pendaran lava di puncak kawah
+        mCol += lavaColor * exp(-craterGlowDist * 12.0) * u_lava * 1.2;
+
+        // Kabut atmosfer di kaki gunung
+        float fog = smoothstep(-0.15, -0.6, uv.y);
+        mCol = mix(mCol, skyBottom * 0.4, fog * 0.5);
+
+        col = mCol;
+      }
+
+      // Tone Mapping & Kontras
+      col = col / (col + vec3(0.8));             // Reinhard tonemapping
+      col = pow(col, vec3(1.0 / 1.6));          // Koreksi Gamma & Kontras pekat
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  </script>
+
+  <script>
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) {
+      alert("Browser Anda tidak mendukung WebGL.");
+    }
+
+    // Compile Shader
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    const vsSource = document.getElementById('vs').text;
+    const fsSource = document.getElementById('fs').text;
+
+    const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    // Quad geometry (2 Segitiga memenuhi layar)
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1
+    ]), gl.STATIC_DRAW);
+
+    const posAttr = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(posAttr);
+    gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+
+    // Uniform Locations
+    const uRes = gl.getUniformLocation(program, 'u_res');
+    const uTime = gl.getUniformLocation(program, 'u_time');
+    const uTurb = gl.getUniformLocation(program, 'u_turb');
+    const uLight = gl.getUniformLocation(program, 'u_light');
+    const uLava = gl.getUniformLocation(program, 'u_lava');
+    const uRock = gl.getUniformLocation(program, 'u_rock');
+    const uPlume = gl.getUniformLocation(program, 'u_plume');
+
+    // State Parameter
+    const state = {
+      turb: 1.35,
+      light: 1.20,
+      lava: 1.40,
+      rock: 1.10,
+      plume: 1.25,
+      animate: true
+    };
+
+    function bindControl(id, key) {
+      const input = document.getElementById(id);
+      const valLabel = document.getElementById('v_' + id);
+      input.addEventListener('input', (e) => {
+        state[key] = parseFloat(e.target.value);
+        valLabel.innerText = state[key].toFixed(2);
+      });
+    }
+
+    bindControl('turb', 'turb');
+    bindControl('light', 'light');
+    bindControl('lava', 'lava');
+    bindControl('rock', 'rock');
+    bindControl('plume', 'plume');
+
+    function toggleAnimation() {
+      state.animate = !state.animate;
+      const btn = document.getElementById('btn_animate');
+      btn.innerText = `Animasi Fluida: ${state.animate ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', state.animate);
+    }
+
+    function resetDefaults() {
+      state.turb = 1.35;
+      state.light = 1.20;
+      state.lava = 1.40;
+      state.rock = 1.10;
+      state.plume = 1.25;
+
+      document.getElementById('turb').value = 1.35; document.getElementById('v_turb').innerText = '1.35';
+      document.getElementById('light').value = 1.20; document.getElementById('v_light').innerText = '1.20';
+      document.getElementById('lava').value = 1.40; document.getElementById('v_lava').innerText = '1.40';
+      document.getElementById('rock').value = 1.10; document.getElementById('v_rock').innerText = '1.10';
+      document.getElementById('plume').value = 1.25; document.getElementById('v_plume').innerText = '1.25';
+    }
+
+    // Loop Animasi Render
+    let startTime = performance.now();
+    let lastTime = startTime;
+    let frames = 0;
+    const fpsLabel = document.getElementById('fps');
+
+    function renderLoop(now) {
+      // Hitung FPS
+      frames++;
+      if (now - lastTime >= 1000) {
+        fpsLabel.innerText = `FPS: ${frames}`;
+        frames = 0;
+        lastTime = now;
+      }
+
+      const elapsed = state.animate ? (now - startTime) * 0.001 : 0.0;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, elapsed);
+      gl.uniform1f(uTurb, state.turb);
+      gl.uniform1f(uLight, state.light);
+      gl.uniform1f(uLava, state.lava);
+      gl.uniform1f(uRock, state.rock);
+      gl.uniform1f(uPlume, state.plume);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      requestAnimationFrame(renderLoop);
+    }
+
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>
